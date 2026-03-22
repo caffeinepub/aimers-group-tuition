@@ -40,11 +40,12 @@ actor {
   };
 
   public shared func deleteAdmissionEnquiry(timestamp : Int) : async () {
+    // Materialize to array BEFORE clearing to avoid lazy-iterator-after-clear bug
     let toKeep = admissionEnquiries.values().filter(
       func(e : AdmissionEnquiry) : Bool { e.timestamp != timestamp }
-    );
+    ).toArray();
     admissionEnquiries.clear();
-    for (e in toKeep) {
+    for (e in toKeep.values()) {
       admissionEnquiries.add(e);
     };
   };
@@ -101,9 +102,9 @@ actor {
           };
         } else { s };
       }
-    );
+    ).toArray();
     studentsList.clear();
-    for (student in updated) {
+    for (student in updated.values()) {
       studentsList.add(student);
     };
   };
@@ -115,9 +116,9 @@ actor {
           { s with isActive = false };
         } else { s };
       }
-    );
+    ).toArray();
     studentsList.clear();
-    for (student in updated) {
+    for (student in updated.values()) {
       studentsList.add(student);
     };
   };
@@ -182,9 +183,9 @@ actor {
   public shared func removeGalleryImage(imageId : Text) : async () {
     let toKeep = images.values().filter(
       func(i : GalleryImage) : Bool { i.imageId != imageId }
-    );
+    ).toArray();
     images.clear();
-    for (image in toKeep) {
+    for (image in toKeep.values()) {
       images.add(image);
     };
   };
