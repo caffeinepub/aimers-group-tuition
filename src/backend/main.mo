@@ -2,7 +2,6 @@ import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 import MixinStorage "blob-storage/Mixin";
 import Map "mo:core/Map";
-import Nat "mo:core/Nat";
 import Int "mo:core/Int";
 import Time "mo:core/Time";
 import List "mo:core/List";
@@ -40,6 +39,16 @@ actor {
     admissionEnquiries.add(enquiryWithTimestamp);
   };
 
+  public shared func deleteAdmissionEnquiry(timestamp : Int) : async () {
+    let toKeep = admissionEnquiries.values().filter(
+      func(e : AdmissionEnquiry) : Bool { e.timestamp != timestamp }
+    );
+    admissionEnquiries.clear();
+    for (e in toKeep) {
+      admissionEnquiries.add(e);
+    };
+  };
+
   // ---------- Student Records ----------
 
   type Student = {
@@ -65,56 +74,56 @@ actor {
   };
 
   public shared func addStudent(input : StudentInput) : async () {
-    let student = {
-      input with
-      enrollmentDate = Time.now() : Int;
+    let student : Student = {
+      studentId = input.studentId;
+      name = input.name;
+      phone = input.phone;
+      email = input.email;
+      course = input.course;
+      enrollmentDate = Time.now();
       isActive = true;
     };
     studentsList.add(student);
   };
 
   public shared func updateStudent(studentId : Text, updatedStudent : StudentInput) : async () {
-    let studentsArray = studentsList.toArray();
-    let updatedArray = studentsArray.map(
-      func(s) {
+    let updated = studentsList.values().map(
+      func(s : Student) : Student {
         if (s.studentId == studentId) {
           {
-            updatedStudent with
-            studentId;
+            studentId = studentId;
+            name = updatedStudent.name;
+            phone = updatedStudent.phone;
+            email = updatedStudent.email;
+            course = updatedStudent.course;
             enrollmentDate = s.enrollmentDate;
             isActive = true;
           };
         } else { s };
       }
     );
-    let newStudentsList = List.fromArray<Student>(updatedArray);
     studentsList.clear();
-    for (student in newStudentsList.values()) {
+    for (student in updated) {
       studentsList.add(student);
     };
   };
 
   public shared func deactivateStudent(studentId : Text) : async () {
-    let studentsArray = studentsList.toArray();
-    let updatedArray = studentsArray.map(
-      func(s) {
+    let updated = studentsList.values().map(
+      func(s : Student) : Student {
         if (s.studentId == studentId) {
-          {
-            s with
-            isActive = false;
-          };
+          { s with isActive = false };
         } else { s };
       }
     );
-    let newStudentsList = List.fromArray<Student>(updatedArray);
     studentsList.clear();
-    for (student in newStudentsList.values()) {
+    for (student in updated) {
       studentsList.add(student);
     };
   };
 
   public query func getStudents() : async [Student] {
-    studentsList.toArray();
+    studentsList.values().toArray();
   };
 
   // ---------- Results ----------
@@ -135,15 +144,19 @@ actor {
   };
 
   public query func getAllResults() : async [Result] {
-    results.toArray();
+    results.values().toArray();
   };
 
   public query func getResultsByStudent(studentId : Text) : async [Result] {
-    results.toArray().filter(func(r) { r.studentId == studentId });
+    results.values().filter(
+      func(r : Result) : Bool { r.studentId == studentId }
+    ).toArray();
   };
 
   public query func getResultsByExam(examName : Text) : async [Result] {
-    results.toArray().filter(func(r) { r.examName == examName });
+    results.values().filter(
+      func(r : Result) : Bool { r.examName == examName }
+    ).toArray();
   };
 
   // ---------- Gallery ----------
@@ -167,21 +180,17 @@ actor {
   };
 
   public shared func removeGalleryImage(imageId : Text) : async () {
-    let imagesArray = images.toArray();
-    let updatedArray = imagesArray.filter(
-      func(i) {
-        i.imageId != imageId;
-      }
+    let toKeep = images.values().filter(
+      func(i : GalleryImage) : Bool { i.imageId != imageId }
     );
-    let newImagesList = List.fromArray<GalleryImage>(updatedArray);
     images.clear();
-    for (image in newImagesList.values()) {
+    for (image in toKeep) {
       images.add(image);
     };
   };
 
   public query func getAllGalleryImages() : async [GalleryImage] {
-    images.toArray();
+    images.values().toArray();
   };
 
   // ---------- Custom User Profile ----------

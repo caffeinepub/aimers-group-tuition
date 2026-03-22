@@ -161,6 +161,7 @@ export interface backendInterface {
     addStudent(input: StudentInput): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     deactivateStudent(studentId: string): Promise<void>;
+    deleteAdmissionEnquiry(timestamp: bigint): Promise<void>;
     getAllAdmissionEnquiries(): Promise<Array<AdmissionEnquiry>>;
     getAllGalleryImages(): Promise<Array<GalleryImage>>;
     getAllResults(): Promise<Array<Result>>;
@@ -344,6 +345,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.deactivateStudent(arg0);
+            return result;
+        }
+    }
+    async deleteAdmissionEnquiry(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteAdmissionEnquiry(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteAdmissionEnquiry(arg0);
             return result;
         }
     }

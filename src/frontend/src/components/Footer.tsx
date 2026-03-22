@@ -59,7 +59,10 @@ export default function Footer() {
               </div>
               <div className="flex gap-2 items-start">
                 <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-[#F57C00]" />
-                <span>123 Education Lane, Mumbai, Maharashtra 400001</span>
+                <span>
+                  007, Ghodbunder Service Rd, Anu Nagar, Waghbil, Thane West,
+                  Thane, Maharashtra 400615
+                </span>
               </div>
             </div>
           </div>

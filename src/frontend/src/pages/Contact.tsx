@@ -67,7 +67,8 @@ export default function Contact() {
                       Address
                     </p>
                     <p className="text-gray-600 text-sm">
-                      123 Education Lane, Mumbai, Maharashtra 400001
+                      007, Ghodbunder Service Rd, Anu Nagar, Waghbil, Thane
+                      West, Thane, Maharashtra 400615
                     </p>
                   </div>
                 </div>
@@ -94,10 +95,10 @@ export default function Contact() {
               <div className="text-center p-8">
                 <MapPin className="w-12 h-12 text-[#1F5EA8] mx-auto mb-3" />
                 <p className="font-semibold text-[#0B2F57]">
-                  123 Education Lane
+                  007, Ghodbunder Service Rd, Anu Nagar
                 </p>
                 <p className="text-gray-500 text-sm">
-                  Mumbai, Maharashtra 400001
+                  Waghbil, Thane West, Thane, Maharashtra 400615
                 </p>
                 <p className="text-gray-400 text-xs mt-2">
                   Google Maps embed available

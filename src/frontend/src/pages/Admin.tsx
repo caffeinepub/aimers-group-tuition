@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Lock, Plus, Trash2 } from "lucide-react";
+import { Loader2, Lock, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import type {
@@ -30,6 +30,11 @@ export default function Admin() {
   const [results, setResults] = useState<Result[]>([]);
   const [gallery, setGallery] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [deletingEnquiry, setDeletingEnquiry] = useState<bigint | null>(null);
+  const [confirmDeleteTimestamp, setConfirmDeleteTimestamp] = useState<
+    bigint | null
+  >(null);
   const [newResult, setNewResult] = useState({
     studentId: "",
     studentName: "",
@@ -71,6 +76,37 @@ export default function Admin() {
     };
     init();
   }, [actor, isFetching, authenticated]);
+
+  const refreshData = async () => {
+    if (!actor) return;
+    setRefreshing(true);
+    try {
+      const [eq, st, res, gal] = await Promise.all([
+        actor.getAllAdmissionEnquiries(),
+        actor.getStudents(),
+        actor.getAllResults(),
+        actor.getAllGalleryImages(),
+      ]);
+      setEnquiries(eq);
+      setStudents(st);
+      setResults(res);
+      setGallery(gal);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const performDeleteEnquiry = async (timestamp: bigint) => {
+    if (!actor) return;
+    setConfirmDeleteTimestamp(null);
+    setDeletingEnquiry(timestamp);
+    try {
+      await actor.deleteAdmissionEnquiry(timestamp);
+      setEnquiries((prev) => prev.filter((e) => e.timestamp !== timestamp));
+    } finally {
+      setDeletingEnquiry(null);
+    }
+  };
 
   const deactivateStudent = async (id: string) => {
     if (!actor) return;
@@ -208,11 +244,25 @@ export default function Admin() {
         className="py-8"
         style={{ background: "linear-gradient(135deg, #1F5EA8, #0B2F57)" }}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
-          <p className="text-blue-200 text-sm">
-            Manage admissions, students, results, and gallery
-          </p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
+            <p className="text-blue-200 text-sm">
+              Manage admissions, students, results, and gallery
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={refreshData}
+            disabled={refreshing}
+            data-ocid="admin.secondary_button"
+            className="flex items-center gap-2 px-4 py-2 border border-white/40 text-white rounded-lg text-sm font-medium hover:bg-white/10 transition-colors disabled:opacity-60"
+          >
+            <RefreshCw
+              className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
+            />
+            {refreshing ? "Refreshing…" : "Refresh"}
+          </button>
         </div>
       </div>
 
@@ -259,6 +309,7 @@ export default function Admin() {
                         <th className="px-5 py-3">Email</th>
                         <th className="px-5 py-3">Course</th>
                         <th className="px-5 py-3">Date Submitted</th>
+                        <th className="px-5 py-3">Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -281,6 +332,54 @@ export default function Admin() {
                           </td>
                           <td className="px-5 py-3 text-gray-500 whitespace-nowrap">
                             {formatDate(e.timestamp)}
+                          </td>
+                          <td className="px-5 py-3">
+                            {confirmDeleteTimestamp === e.timestamp ? (
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    performDeleteEnquiry(e.timestamp)
+                                  }
+                                  disabled={deletingEnquiry === e.timestamp}
+                                  data-ocid={`admissions.confirm_button.${i + 1}`}
+                                  className="px-2 py-1 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded transition-colors disabled:opacity-50"
+                                >
+                                  {deletingEnquiry === e.timestamp ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    "Confirm"
+                                  )}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setConfirmDeleteTimestamp(null)
+                                  }
+                                  data-ocid={`admissions.cancel_button.${i + 1}`}
+                                  className="px-2 py-1 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setConfirmDeleteTimestamp(e.timestamp)
+                                }
+                                disabled={deletingEnquiry === e.timestamp}
+                                data-ocid={`admissions.delete_button.${i + 1}`}
+                                className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 font-medium disabled:opacity-50 transition-colors"
+                              >
+                                {deletingEnquiry === e.timestamp ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                )}
+                                Delete
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}

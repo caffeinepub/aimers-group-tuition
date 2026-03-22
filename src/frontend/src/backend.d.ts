@@ -61,6 +61,7 @@ export interface backendInterface {
     addStudent(input: StudentInput): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     deactivateStudent(studentId: string): Promise<void>;
+    deleteAdmissionEnquiry(timestamp: bigint): Promise<void>;
     getAllAdmissionEnquiries(): Promise<Array<AdmissionEnquiry>>;
     getAllGalleryImages(): Promise<Array<GalleryImage>>;
     getAllResults(): Promise<Array<Result>>;
