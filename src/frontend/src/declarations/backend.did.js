@@ -99,6 +99,7 @@ export const idlService = IDL.Service({
   'addStudent' : IDL.Func([StudentInput], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'deactivateStudent' : IDL.Func([IDL.Text], [], []),
+  'deleteAdmissionEnquiry' : IDL.Func([IDL.Int], [], []),
   'getAllAdmissionEnquiries' : IDL.Func(
       [],
       [IDL.Vec(AdmissionEnquiry)],
@@ -217,6 +218,7 @@ export const idlFactory = ({ IDL }) => {
     'addStudent' : IDL.Func([StudentInput], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'deactivateStudent' : IDL.Func([IDL.Text], [], []),
+    'deleteAdmissionEnquiry' : IDL.Func([IDL.Int], [], []),
     'getAllAdmissionEnquiries' : IDL.Func(
         [],
         [IDL.Vec(AdmissionEnquiry)],

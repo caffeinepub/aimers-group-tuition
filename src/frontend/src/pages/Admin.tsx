@@ -35,6 +35,7 @@ export default function Admin() {
   const [confirmDeleteTimestamp, setConfirmDeleteTimestamp] = useState<
     bigint | null
   >(null);
+  const [deleteError, setDeleteError] = useState("");
   const [newResult, setNewResult] = useState({
     studentId: "",
     studentName: "",
@@ -100,9 +101,12 @@ export default function Admin() {
     if (!actor) return;
     setConfirmDeleteTimestamp(null);
     setDeletingEnquiry(timestamp);
+    setDeleteError("");
     try {
       await actor.deleteAdmissionEnquiry(timestamp);
       setEnquiries((prev) => prev.filter((e) => e.timestamp !== timestamp));
+    } catch (err) {
+      setDeleteError(`Delete failed: ${String(err)}`);
     } finally {
       setDeletingEnquiry(null);
     }
@@ -299,93 +303,107 @@ export default function Admin() {
                   No enquiries yet.
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-gray-50 text-left text-xs text-gray-500 uppercase tracking-wide">
-                        <th className="px-5 py-3">#</th>
-                        <th className="px-5 py-3">Name</th>
-                        <th className="px-5 py-3">Phone</th>
-                        <th className="px-5 py-3">Email</th>
-                        <th className="px-5 py-3">Course</th>
-                        <th className="px-5 py-3">Date Submitted</th>
-                        <th className="px-5 py-3">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {enquiries.map((e, i) => (
-                        <tr
-                          key={`enq-${e.email}-${i}`}
-                          data-ocid={`admissions.row.${i + 1}`}
-                          className="border-t border-[#E6EAF1] hover:bg-gray-50"
-                        >
-                          <td className="px-5 py-3 text-gray-400">{i + 1}</td>
-                          <td className="px-5 py-3 font-medium text-[#0B2F57]">
-                            {e.name}
-                          </td>
-                          <td className="px-5 py-3 text-gray-600">{e.phone}</td>
-                          <td className="px-5 py-3 text-gray-600">{e.email}</td>
-                          <td className="px-5 py-3">
-                            <span className="px-2 py-1 bg-blue-50 text-[#1F5EA8] rounded text-xs font-semibold">
-                              {e.course}
-                            </span>
-                          </td>
-                          <td className="px-5 py-3 text-gray-500 whitespace-nowrap">
-                            {formatDate(e.timestamp)}
-                          </td>
-                          <td className="px-5 py-3">
-                            {confirmDeleteTimestamp === e.timestamp ? (
-                              <div className="flex items-center gap-2">
+                <>
+                  {deleteError && (
+                    <div
+                      className="mx-5 mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm"
+                      data-ocid="admissions.error_state"
+                    >
+                      {deleteError}
+                    </div>
+                  )}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-gray-50 text-left text-xs text-gray-500 uppercase tracking-wide">
+                          <th className="px-5 py-3">#</th>
+                          <th className="px-5 py-3">Name</th>
+                          <th className="px-5 py-3">Phone</th>
+                          <th className="px-5 py-3">Email</th>
+                          <th className="px-5 py-3">Course</th>
+                          <th className="px-5 py-3">Date Submitted</th>
+                          <th className="px-5 py-3">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {enquiries.map((e, i) => (
+                          <tr
+                            key={`enq-${e.email}-${i}`}
+                            data-ocid={`admissions.row.${i + 1}`}
+                            className="border-t border-[#E6EAF1] hover:bg-gray-50"
+                          >
+                            <td className="px-5 py-3 text-gray-400">{i + 1}</td>
+                            <td className="px-5 py-3 font-medium text-[#0B2F57]">
+                              {e.name}
+                            </td>
+                            <td className="px-5 py-3 text-gray-600">
+                              {e.phone}
+                            </td>
+                            <td className="px-5 py-3 text-gray-600">
+                              {e.email}
+                            </td>
+                            <td className="px-5 py-3">
+                              <span className="px-2 py-1 bg-blue-50 text-[#1F5EA8] rounded text-xs font-semibold">
+                                {e.course}
+                              </span>
+                            </td>
+                            <td className="px-5 py-3 text-gray-500 whitespace-nowrap">
+                              {formatDate(e.timestamp)}
+                            </td>
+                            <td className="px-5 py-3">
+                              {confirmDeleteTimestamp === e.timestamp ? (
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      performDeleteEnquiry(e.timestamp)
+                                    }
+                                    disabled={deletingEnquiry === e.timestamp}
+                                    data-ocid={`admissions.confirm_button.${i + 1}`}
+                                    className="px-2 py-1 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded transition-colors disabled:opacity-50"
+                                  >
+                                    {deletingEnquiry === e.timestamp ? (
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                      "Confirm"
+                                    )}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setConfirmDeleteTimestamp(null)
+                                    }
+                                    data-ocid={`admissions.cancel_button.${i + 1}`}
+                                    className="px-2 py-1 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              ) : (
                                 <button
                                   type="button"
                                   onClick={() =>
-                                    performDeleteEnquiry(e.timestamp)
+                                    setConfirmDeleteTimestamp(e.timestamp)
                                   }
                                   disabled={deletingEnquiry === e.timestamp}
-                                  data-ocid={`admissions.confirm_button.${i + 1}`}
-                                  className="px-2 py-1 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded transition-colors disabled:opacity-50"
+                                  data-ocid={`admissions.delete_button.${i + 1}`}
+                                  className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 font-medium disabled:opacity-50 transition-colors"
                                 >
                                   {deletingEnquiry === e.timestamp ? (
-                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                   ) : (
-                                    "Confirm"
+                                    <Trash2 className="w-3.5 h-3.5" />
                                   )}
+                                  Delete
                                 </button>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setConfirmDeleteTimestamp(null)
-                                  }
-                                  data-ocid={`admissions.cancel_button.${i + 1}`}
-                                  className="px-2 py-1 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded transition-colors"
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setConfirmDeleteTimestamp(e.timestamp)
-                                }
-                                disabled={deletingEnquiry === e.timestamp}
-                                data-ocid={`admissions.delete_button.${i + 1}`}
-                                className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 font-medium disabled:opacity-50 transition-colors"
-                              >
-                                {deletingEnquiry === e.timestamp ? (
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                ) : (
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                )}
-                                Delete
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           </TabsContent>

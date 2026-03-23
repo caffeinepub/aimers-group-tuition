@@ -87,6 +87,7 @@ export interface _SERVICE {
   'addStudent' : ActorMethod<[StudentInput], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'deactivateStudent' : ActorMethod<[string], undefined>,
+  'deleteAdmissionEnquiry' : ActorMethod<[bigint], undefined>,
   'getAllAdmissionEnquiries' : ActorMethod<[], Array<AdmissionEnquiry>>,
   'getAllGalleryImages' : ActorMethod<[], Array<GalleryImage>>,
   'getAllResults' : ActorMethod<[], Array<Result>>,

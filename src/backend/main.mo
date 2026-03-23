@@ -2,13 +2,10 @@ import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 import MixinStorage "blob-storage/Mixin";
 import Map "mo:core/Map";
-import Int "mo:core/Int";
 import Time "mo:core/Time";
-import List "mo:core/List";
-import Text "mo:core/Text";
-import Iter "mo:core/Iter";
-import Runtime "mo:core/Runtime";
 import Principal "mo:core/Principal";
+import Runtime "mo:core/Runtime";
+import Buffer "mo:base/Buffer";
 
 actor {
   let accessControlState = AccessControl.initState();
@@ -25,29 +22,34 @@ actor {
     timestamp : Int;
   };
 
-  let admissionEnquiries = List.empty<AdmissionEnquiry>();
+  stable var admissionEnquiries : [AdmissionEnquiry] = [];
 
   public query func getAllAdmissionEnquiries() : async [AdmissionEnquiry] {
-    admissionEnquiries.values().toArray();
+    admissionEnquiries;
   };
 
   public shared func submitAdmissionEnquiry(enquiry : AdmissionEnquiry) : async () {
-    let enquiryWithTimestamp = {
-      enquiry with
+    let entry : AdmissionEnquiry = {
+      name = enquiry.name;
+      phone = enquiry.phone;
+      email = enquiry.email;
+      course = enquiry.course;
       timestamp = Time.now();
     };
-    admissionEnquiries.add(enquiryWithTimestamp);
+    let buf = Buffer.Buffer<AdmissionEnquiry>(admissionEnquiries.size() + 1);
+    for (e in admissionEnquiries.vals()) { buf.add(e); };
+    buf.add(entry);
+    admissionEnquiries := Buffer.toArray(buf);
   };
 
   public shared func deleteAdmissionEnquiry(timestamp : Int) : async () {
-    // Materialize to array BEFORE clearing to avoid lazy-iterator-after-clear bug
-    let toKeep = admissionEnquiries.values().filter(
-      func(e : AdmissionEnquiry) : Bool { e.timestamp != timestamp }
-    ).toArray();
-    admissionEnquiries.clear();
-    for (e in toKeep.values()) {
-      admissionEnquiries.add(e);
+    let buf = Buffer.Buffer<AdmissionEnquiry>(admissionEnquiries.size());
+    for (e in admissionEnquiries.vals()) {
+      if (e.timestamp != timestamp) {
+        buf.add(e);
+      };
     };
+    admissionEnquiries := Buffer.toArray(buf);
   };
 
   // ---------- Student Records ----------
@@ -62,7 +64,7 @@ actor {
     isActive : Bool;
   };
 
-  let studentsList = List.empty<Student>();
+  stable var studentsList : [Student] = [];
 
   public type StudentInput = {
     studentId : Text;
@@ -84,47 +86,54 @@ actor {
       enrollmentDate = Time.now();
       isActive = true;
     };
-    studentsList.add(student);
+    let buf = Buffer.Buffer<Student>(studentsList.size() + 1);
+    for (s in studentsList.vals()) { buf.add(s); };
+    buf.add(student);
+    studentsList := Buffer.toArray(buf);
   };
 
   public shared func updateStudent(studentId : Text, updatedStudent : StudentInput) : async () {
-    let updated = studentsList.values().map(
-      func(s : Student) : Student {
-        if (s.studentId == studentId) {
-          {
-            studentId = studentId;
-            name = updatedStudent.name;
-            phone = updatedStudent.phone;
-            email = updatedStudent.email;
-            course = updatedStudent.course;
-            enrollmentDate = s.enrollmentDate;
-            isActive = true;
-          };
-        } else { s };
-      }
-    ).toArray();
-    studentsList.clear();
-    for (student in updated.values()) {
-      studentsList.add(student);
+    let buf = Buffer.Buffer<Student>(studentsList.size());
+    for (s in studentsList.vals()) {
+      if (s.studentId == studentId) {
+        buf.add({
+          studentId = studentId;
+          name = updatedStudent.name;
+          phone = updatedStudent.phone;
+          email = updatedStudent.email;
+          course = updatedStudent.course;
+          enrollmentDate = s.enrollmentDate;
+          isActive = true;
+        });
+      } else {
+        buf.add(s);
+      };
     };
+    studentsList := Buffer.toArray(buf);
   };
 
   public shared func deactivateStudent(studentId : Text) : async () {
-    let updated = studentsList.values().map(
-      func(s : Student) : Student {
-        if (s.studentId == studentId) {
-          { s with isActive = false };
-        } else { s };
-      }
-    ).toArray();
-    studentsList.clear();
-    for (student in updated.values()) {
-      studentsList.add(student);
+    let buf = Buffer.Buffer<Student>(studentsList.size());
+    for (s in studentsList.vals()) {
+      if (s.studentId == studentId) {
+        buf.add({
+          studentId = s.studentId;
+          name = s.name;
+          phone = s.phone;
+          email = s.email;
+          course = s.course;
+          enrollmentDate = s.enrollmentDate;
+          isActive = false;
+        });
+      } else {
+        buf.add(s);
+      };
     };
+    studentsList := Buffer.toArray(buf);
   };
 
   public query func getStudents() : async [Student] {
-    studentsList.values().toArray();
+    studentsList;
   };
 
   // ---------- Results ----------
@@ -138,26 +147,33 @@ actor {
     year : Int;
   };
 
-  let results = List.empty<Result>();
+  stable var resultsList : [Result] = [];
 
   public shared func addResult(result : Result) : async () {
-    results.add(result);
+    let buf = Buffer.Buffer<Result>(resultsList.size() + 1);
+    for (r in resultsList.vals()) { buf.add(r); };
+    buf.add(result);
+    resultsList := Buffer.toArray(buf);
   };
 
   public query func getAllResults() : async [Result] {
-    results.values().toArray();
+    resultsList;
   };
 
   public query func getResultsByStudent(studentId : Text) : async [Result] {
-    results.values().filter(
-      func(r : Result) : Bool { r.studentId == studentId }
-    ).toArray();
+    let buf = Buffer.Buffer<Result>(resultsList.size());
+    for (r in resultsList.vals()) {
+      if (r.studentId == studentId) { buf.add(r); };
+    };
+    Buffer.toArray(buf);
   };
 
   public query func getResultsByExam(examName : Text) : async [Result] {
-    results.values().filter(
-      func(r : Result) : Bool { r.examName == examName }
-    ).toArray();
+    let buf = Buffer.Buffer<Result>(resultsList.size());
+    for (r in resultsList.vals()) {
+      if (r.examName == examName) { buf.add(r); };
+    };
+    Buffer.toArray(buf);
   };
 
   // ---------- Gallery ----------
@@ -170,28 +186,32 @@ actor {
     uploadedAt : Int;
   };
 
-  let images = List.empty<GalleryImage>();
+  stable var galleryImages : [GalleryImage] = [];
 
   public shared func addGalleryImage(image : GalleryImage) : async () {
-    let imageWithTimestamp = {
-      image with
+    let entry : GalleryImage = {
+      imageId = image.imageId;
+      title = image.title;
+      description = image.description;
+      blobId = image.blobId;
       uploadedAt = Time.now();
     };
-    images.add(imageWithTimestamp);
+    let buf = Buffer.Buffer<GalleryImage>(galleryImages.size() + 1);
+    for (g in galleryImages.vals()) { buf.add(g); };
+    buf.add(entry);
+    galleryImages := Buffer.toArray(buf);
   };
 
   public shared func removeGalleryImage(imageId : Text) : async () {
-    let toKeep = images.values().filter(
-      func(i : GalleryImage) : Bool { i.imageId != imageId }
-    ).toArray();
-    images.clear();
-    for (image in toKeep.values()) {
-      images.add(image);
+    let buf = Buffer.Buffer<GalleryImage>(galleryImages.size());
+    for (g in galleryImages.vals()) {
+      if (g.imageId != imageId) { buf.add(g); };
     };
+    galleryImages := Buffer.toArray(buf);
   };
 
   public query func getAllGalleryImages() : async [GalleryImage] {
-    images.values().toArray();
+    galleryImages;
   };
 
   // ---------- Custom User Profile ----------
